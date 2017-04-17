@@ -1,0 +1,18 @@
+# using a linux machine with wifi and ethernet adapter to NAT network traffic between a wireless network and ethernet connected Smart TV (that does not have a wireless interface)
+
+# enable ip_forwarding:
+cp ./nat_sysctl.conf /etc/sysctl.d/
+
+
+# setup the ethernet interface in the appropriate ifcfg-* file:
+# make sure the following line is present so all incoming traffic uses the wireless interface default route and not its own:
+DEFROUTE=no
+
+
+# add firewalld rules:
+firewall-cmd --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -o wlp2s0 -j MASQUERADE
+firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i wlp2s0 -o enp3s0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 1 -i enp3s0 -o wlp2s0 -j ACCEPT
+
+# note the priority of 1 for the final rule, this allows a logging rule to be added before this to see what is happening to traffic coming in on the Ethernet interface as such:
+firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -j LOG
